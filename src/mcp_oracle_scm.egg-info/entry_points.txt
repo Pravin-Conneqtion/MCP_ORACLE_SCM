@@ -1,0 +1,2 @@
+[console_scripts]
+mcp_oracle_scm = mcp_oracle_scm.server:main
