@@ -32,7 +32,7 @@ class OracleLocationManager:
     def __init__(self, config):
         self.base_url = config["base_url"]
         # ✅ FIX: OracleAuth() doesn’t take arguments
-        self.auth = OracleAuth()
+        self.auth =  OracleAuth()
         Logger.log(
             "Initialized OracleLocationManager",
             level="INFO",
@@ -153,7 +153,7 @@ class OracleLocationManager:
         target_config = ORACLE_CONFIGS[target_env]
         target_base_url = target_config["base_url"]
 
-        target_auth = OracleAuth()
+        target_auth = OracleAuth(target_env)
         headers = {
             "Authorization": f"Bearer {target_auth.get_connection()}",
             "Content-Type": "application/json"

@@ -66,9 +66,9 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
         pass
 
 class OracleAuth:
-    def __init__(self):
+    def __init__(self, env_name: Optional[str] = None):
         """Initialize authentication using environment configuration"""
-        config = get_env_config()
+        config = get_env_config(env_name)
         self.auth_url = config['auth_url']
         self.token_url = config['token_url']
         self.client_id = config['client_id']

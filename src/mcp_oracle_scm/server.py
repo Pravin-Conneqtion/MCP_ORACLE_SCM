@@ -7,6 +7,9 @@ import logging
 import os
 from dotenv import load_dotenv
 from mcp_oracle_scm.config.location_service import get_location_service
+from mcp_oracle_scm.fusion_setup.setup_export_service import get_setup_export_service
+from mcp_oracle_scm.fusion_setup.setup_import_service import SetupTaskCSVImportService
+
 
 
 # Import modules
@@ -720,6 +723,113 @@ mcp = FastMCP(
     "mcp_oracle_scm",
     instructions=instructions
 )
+
+
+######## SETUP TASK MIGRATION TOOL ##########
+
+@mcp.tool()
+async def migrate_setup_task(
+    task_code: str,
+    source_env: str,
+    target_env: str
+) -> Dict[str, Any]:
+    """
+    Full end-to-end Setup Task Migration:
+    Export from source → Import into target.
+
+    Example:
+    migrate_setup_task("XLE_MANAGE_LEGAL_ENTITY", "DEV1", "DEV2")
+    """
+    try:
+        Logger.log(
+            "Starting migrate_setup_task TOOL",
+            level="INFO",
+            task_code=task_code,
+            source_env=source_env,
+            target_env=target_env
+        )
+
+        # ---------------------- EXPORT ---------------------- 
+        export_svc = get_setup_export_service(source_env)
+
+        export_result = await export_svc.export_setup_task(task_code)
+
+        Logger.log(
+            "Export result received",
+            level="INFO",
+            export_result=export_result
+        )
+
+        # Validate export success
+        if not export_result.get("export_completed"):
+            return {
+                "success": False,
+                "stage": "export",
+                "error": "Export did not complete successfully",
+                "details": export_result
+            }
+
+        # Check download result block
+        download_block = export_result.get("download", {})
+        if not download_block:
+            return {
+                "success": False,
+                "stage": "export",
+                "error": "Download block missing in export result",
+                "details": export_result
+            }
+
+        # Validate download success
+        if not download_block.get("success"):
+            return {
+                "success": False,
+                "stage": "export-download",
+                "error": "Download failed",
+                "details": download_block
+            }
+
+        # Extract file_path safely
+        zip_file_path = download_block.get("file_path")
+        if not zip_file_path:
+            return {
+                "success": False,
+                "stage": "export-download",
+                "error": "Missing file_path in download result",
+                "details": download_block
+            }
+
+        # ---------------------- IMPORT ---------------------- #
+        import_svc = SetupTaskCSVImportService(target_env)
+
+        import_result = await import_svc.run_import(task_code, zip_file_path)
+
+        final_output = {
+            "success": True,
+            "task_code": task_code,
+            "source_env": source_env,
+            "target_env": target_env,
+            "export": export_result,
+            "import": import_result
+        }
+
+        Logger.log(
+            "Completed migrate_setup_task TOOL",
+            level="INFO",
+            result=final_output
+        )
+
+        return final_output
+
+    except Exception as e:
+        Logger.log("Error in migrate_setup_task TOOL", level="ERROR", error=str(e))
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+
+
 
 
 ######## CONFIGURATION MIGRATION TOOLS BELOW ##########

@@ -1,7 +1,7 @@
 """Oracle SCM Configuration Module"""
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Oracle Environment Configuration
 ORACLE_CONFIGS = {
@@ -42,9 +42,9 @@ API_CONFIG = {
     }
 }
 
-def get_env_config() -> Dict[str, Any]:
+def get_env_config(env_name: Optional[str] = None) -> Dict[str, Any]:
     """Get Oracle configuration based on environment"""
-    env = os.environ.get("ORACLE_ENV", "DEV1").upper()
+    env = (env_name or os.environ.get("ORACLE_ENV", "DEV1")).upper()
     
     if env not in ORACLE_CONFIGS:
         raise ValueError(f"Invalid Oracle Environment: {env}. Valid values are: {', '.join(ORACLE_CONFIGS.keys())}")
